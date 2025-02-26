@@ -6,9 +6,9 @@ import "aframe";
 
 export default function DynamicHome() {
 
-  const [now, setNow] = React.useState(new Date())
   const [rendered,set_rendered] = React.useState(false)
   const [controller_object, set_controller_object] = React.useState(new THREE.Object3D())
+  const [controller_pos, set_controller_pos] = React.useState(new THREE.Vector3())
   const [trigger_on, set_trigger_on] = React.useState(false)
   const [grip_on, set_grip_on] = React.useState(false);
   const [grip_value, set_grip_value] = React.useState(0);
@@ -24,13 +24,6 @@ export default function DynamicHome() {
   const [vr_mode, set_vr_mode] = React.useState(false)
 
   const order = 'ZYX';
-
-  React.useEffect(function() {
-    const intervalId = setInterval(function() {
-      setNow(new Date());
-    }, 10);
-    return function(){clearInterval(intervalId)};
-  }, [now]);
 
   React.useEffect(() => {
     console.log("useEffect");
@@ -72,6 +65,15 @@ export default function DynamicHome() {
           this.el.addEventListener('bbuttonup', (evt) => {
             set_button_b_on(false);
           });
+        },
+        tick: function () {
+          const after_pos = {...this.el.object3D.position};
+          set_controller_pos((before_pos)=>{
+            if(before_pos.x !== after_pos.x || before_pos.y !== after_pos.y || before_pos.z !== after_pos.z) {
+              return after_pos
+            }
+            return {...before_pos}
+          })
         }
       });
       AFRAME.registerComponent('scene', {
@@ -92,14 +94,13 @@ export default function DynamicHome() {
   }, []);
 
   React.useEffect(() => {
-    console.log("controller_object", controller_object.position)
-    console.log("controller_object", controller_object.rotation)
-  }, [controller_object.position.x]);
+    console.log("controller_pos", controller_pos)
+  }, [controller_pos.x,controller_pos.y,controller_pos.z]);
 
   React.useEffect(() => {
     console.log("controller_object", controller_object.position)
     console.log("controller_object", controller_object.rotation)
-  }, [controller_object.position.y]);
+  }, [controller_object.position.x,controller_object.position.y,controller_object.position.z]);
 
 
   if(rendered){
