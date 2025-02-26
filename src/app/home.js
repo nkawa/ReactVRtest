@@ -2,11 +2,13 @@
 import * as React from 'react'
 
 import "aframe";
-import { useEffect } from "react/cjs/react.production";
+//import { useEffect } from "react/cjs/react.production";
 
 export default function DynamicHome() {
 
+  const [rendered,set_rendered] = React.useState(false)
   const [controller_object, set_controller_object] = React.useState(new THREE.Object3D())
+  const [controller_pos, set_controller_pos] = React.useState(new THREE.Vector3())
   const [trigger_on, set_trigger_on] = React.useState(false)
   const [grip_on, set_grip_on] = React.useState(false);
   const [grip_value, set_grip_value] = React.useState(0);
@@ -26,6 +28,7 @@ export default function DynamicHome() {
   React.useEffect(() => {
     console.log("useEffect");
     if (!AFRAME.components['vr-controller-right']) {
+      setTimeout(()=>set_rendered(true),1)
       console.log("Registering VR Controller Component");
       AFRAME.registerComponent('vr-controller-right', {
         init: function () {
@@ -63,30 +66,54 @@ export default function DynamicHome() {
             set_button_b_on(false);
           });
         },
-        tick: function (time, deltaTime) {
+        tick: function () {
+          const after_pos = {...this.el.object3D.position};
+          set_controller_pos((before_pos)=>{
+            if(before_pos.x !== after_pos.x || before_pos.y !== after_pos.y || before_pos.z !== after_pos.z) {
+              return after_pos
+            }
+            return {...before_pos}
+          })
         }
       });
-      
+      AFRAME.registerComponent('scene', {
+        schema: {type: 'string', default: ''},
+        init: function () {
+          this.el.enterVR();
+          this.el.addEventListener('enter-vr', ()=>{
+            set_vr_mode(true)
+            console.log('enter-vr')
+          });
+          this.el.addEventListener('exit-vr', ()=>{
+            set_vr_mode(false)
+            console.log('exit-vr')
+          });
+        }
+      });
     }
   }, []);
 
   React.useEffect(() => {
-    console.log("controller_object", controller_object.position)
-    console.log("controller_object", controller_object.rotation)
-  }, [controller_object.position.x]);
+    console.log("controller_pos", controller_pos)
+  }, [controller_pos.x,controller_pos.y,controller_pos.z]);
 
   React.useEffect(() => {
     console.log("controller_object", controller_object.position)
     console.log("controller_object", controller_object.rotation)
-  }, [controller_object.position.x]);
+  }, [controller_object.position.x,controller_object.position.y,controller_object.position.z]);
 
 
-  return (
-    <>
-      <a-scene xr-mode-ui="XRMode: ar">
+  if(rendered){
+    return (
+      <a-scene scene>
         <a-entity oculus-touch-controls="hand: right" vr-controller-right visible="true"></a-entity>
         <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
       </a-scene>
-    </>
-  );
+    );
+  }else{
+    console.log("loading...");
+    return (
+      <div>loading...</div>
+    );
+  }
 }
